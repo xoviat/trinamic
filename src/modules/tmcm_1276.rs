@@ -1,4 +1,6 @@
-pub struct TMCM_1276<T: bxcan::Instance> {
+use crate::{TMCLConnnection, TMCLInterface, TMCLReply, TMCLRequest};
+
+pub struct TMCM_1276<T: TMCLConnnection> {
     connection: TMCLInterface<T>,
     MOTORS: u8,
     __default_motor: u8,
@@ -176,7 +178,7 @@ impl<T: bxcan::Instance> TMCM_1276<T> {
     //        print("\tRamp mode: " + ("position" if (self.getRampMode()==0) else "velocity"))
 }
 
-enum _AP {
+pub enum _AP {
     TargetPosition = 0,
     ActualPosition = 1,
     TargetVelocity = 2,
@@ -255,7 +257,7 @@ enum _AP {
     UnitMode = 255,
 }
 
-enum _GP {
+pub enum _GP {
     timer_0 = 0,
     timer_1 = 1,
     timer_2 = 2,

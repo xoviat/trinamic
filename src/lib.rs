@@ -669,5 +669,5 @@ impl TMCLReply {
     }
 }
 
-mod connections;
-mod modules;
+pub mod connections;
+pub mod modules;
