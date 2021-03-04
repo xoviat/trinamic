@@ -1,6 +1,9 @@
 #![no_std]
+#![feature(generic_associated_types)]
+#![feature(type_alias_impl_trait)]
 
 use core::convert::TryInto;
+use core::future::Future;
 use core::mem::transmute;
 
 struct TMCHelpers {}
@@ -50,8 +53,11 @@ impl TMCL {
 }
 
 pub trait TMCLConnnection {
-    fn _send(&mut self, host_id: u16, module_id: u16, data: [u8; 8]);
-    fn _recv(&mut self, host_id: u16, module_id: u16) -> [u8; 8];
+    type SendFuture<'a>: Future<Output = ()>;
+    type ReceiveFuture<'a>: Future<Output = [u8; 8]>;
+
+    fn _send<'a>(&mut self, host_id: u16, module_id: u16, data: [u8; 8]) -> Self::SendFuture<'a>;
+    fn _recv<'a>(&mut self, host_id: u16, module_id: u16) -> Self::ReceiveFuture<'a>;
 }
 
 pub struct TMCLInterface<T: TMCLConnnection> {
@@ -161,7 +167,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
     //      }
     // Send a TMCL datagram and read back a reply. This function blocks until
     // the reply has been received.
-    fn send(
+    async fn send(
         &mut self,
         opcode: TMCLCommand,
         opType: u8,
@@ -179,12 +185,12 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         self.connection
             ._send(self._HOST_ID, module_id, request.to_buffer());
 
-        TMCLReply::from_buffer(self.connection._recv(self._HOST_ID, module_id))
+        TMCLReply::from_buffer(self.connection._recv(self._HOST_ID, module_id).await)
     }
 
     // Send the command for entering bootloader mode. This TMCL command does
     // sresult in a reply.
-    fn sendBoot(&mut self, module_id: Option<u16>) {
+    async fn sendBoot(&mut self, module_id: Option<u16>) {
         // # If no module ID is given, use the default one
         let module_id = match module_id {
             None => self._MODULE_ID,
@@ -203,6 +209,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         // # Send the request
         self.connection
             ._send(self._HOST_ID, module_id, request.to_buffer())
+            .await
     }
     //    pub fn getVersionString(&mut self, module_id=None) {
     //        """
@@ -215,7 +222,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
     //      }
 
     //    # General parameter access functions
-    fn parameter(
+    async fn parameter(
         &mut self,
         pCommand: TMCLCommand,
         pType: u8,
@@ -224,7 +231,10 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         module_id: Option<u16>,
         signed: bool,
     ) -> u32 {
-        let mut value = self.send(pCommand, pType, pAxis, pValue, module_id).value;
+        let mut value = self
+            .send(pCommand, pType, pAxis, pValue, module_id)
+            .await
+            .value;
         if signed {
             value = TMCHelpers::to_signed_32(value);
         }
@@ -232,7 +242,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         value
     }
 
-    fn setParameter(
+    async fn setParameter(
         &mut self,
         pCommand: TMCLCommand,
         pType: u8,
@@ -240,11 +250,11 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         pValue: u32,
         module_id: Option<u16>,
     ) -> TMCLReply {
-        self.send(pCommand, pType, pAxis, pValue, module_id)
+        self.send(pCommand, pType, pAxis, pValue, module_id).await
     }
 
     // Axis parameter access functions
-    fn axisParameter(
+    async fn axisParameter(
         &mut self,
         commandType: u8,
         axis: u8,
@@ -253,6 +263,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
     ) -> u32 {
         let mut value = self
             .send(TMCLCommand::GAP, commandType, axis, 0, module_id)
+            .await
             .value;
 
         if signed {
@@ -262,7 +273,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         value
     }
 
-    fn setAxisParameter(
+    async fn setAxisParameter(
         &mut self,
         commandType: u8,
         axis: u8,
@@ -270,30 +281,34 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         module_id: Option<u16>,
     ) -> TMCLReply {
         self.send(TMCLCommand::SAP, commandType, axis, value, module_id)
+            .await
     }
 
-    fn storeAxisParameter(
+    async fn storeAxisParameter(
         &mut self,
         commandType: u8,
         axis: u8,
         module_id: Option<u16>,
     ) -> TMCLReply {
         self.send(TMCLCommand::STAP, commandType, axis, 0, module_id)
+            .await
     }
 
-    fn setAndStoreAxisParameter(
+    async fn setAndStoreAxisParameter(
         &mut self,
         commandType: u8,
         axis: u8,
         value: u32,
         module_id: Option<u16>,
     ) {
-        self.send(TMCLCommand::SAP, commandType, axis, value, module_id);
-        self.send(TMCLCommand::STAP, commandType, axis, 0, module_id);
+        self.send(TMCLCommand::SAP, commandType, axis, value, module_id)
+            .await;
+        self.send(TMCLCommand::STAP, commandType, axis, 0, module_id)
+            .await;
     }
 
     //    # Global parameter access functions
-    fn globalParameter(
+    async fn globalParameter(
         &mut self,
         commandType: u8,
         bank: u8,
@@ -302,6 +317,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
     ) -> u32 {
         let mut value = self
             .send(TMCLCommand::GGP, commandType, bank, 0, module_id)
+            .await
             .value;
         if signed {
             value = TMCHelpers::to_signed_32(value);
@@ -310,50 +326,68 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         value
     }
 
-    fn setGlobalParameter(
+    async fn setGlobalParameter(
         &mut self,
         commandType: u8,
         bank: u8,
         value: u32,
         module_id: Option<u16>,
     ) {
-        self.send(TMCLCommand::SGP, commandType, bank, value, module_id);
+        self.send(TMCLCommand::SGP, commandType, bank, value, module_id)
+            .await;
     }
 
-    fn storeGlobalParameter(&mut self, commandType: u8, bank: u8, module_id: Option<u16>) {
-        self.send(TMCLCommand::STGP, commandType, bank, 0, module_id);
+    async fn storeGlobalParameter(&mut self, commandType: u8, bank: u8, module_id: Option<u16>) {
+        self.send(TMCLCommand::STGP, commandType, bank, 0, module_id)
+            .await;
     }
 
-    fn setAndStoreGlobalParameter(
+    async fn setAndStoreGlobalParameter(
         &mut self,
         commandType: u8,
         bank: u8,
         value: u32,
         module_id: Option<u16>,
     ) {
-        self.send(TMCLCommand::SGP, commandType, bank, value, module_id);
-        self.send(TMCLCommand::STGP, commandType, bank, 0, module_id);
+        self.send(TMCLCommand::SGP, commandType, bank, value, module_id)
+            .await;
+        self.send(TMCLCommand::STGP, commandType, bank, 0, module_id)
+            .await;
     }
 
     // # Register access functions
-    fn writeMC(&mut self, registerAddress: u8, value: u32, module_id: Option<u16>) -> TMCLReply {
+    async fn writeMC(
+        &mut self,
+        registerAddress: u8,
+        value: u32,
+        module_id: Option<u16>,
+    ) -> TMCLReply {
         self.writeRegister(registerAddress, TMCLCommand::WRITE_MC, 0, value, module_id)
+            .await
     }
 
-    fn readMC(&mut self, registerAddress: u8, module_id: Option<u16>, signed: bool) -> u32 {
+    async fn readMC(&mut self, registerAddress: u8, module_id: Option<u16>, signed: bool) -> u32 {
         self.readRegister(registerAddress, TMCLCommand::READ_MC, 0, module_id, signed)
+            .await
     }
 
-    fn writeDRV(&mut self, registerAddress: u8, value: u32, module_id: Option<u16>) -> TMCLReply {
+    async fn writeDRV(
+        &mut self,
+        registerAddress: u8,
+        value: u32,
+        module_id: Option<u16>,
+    ) -> TMCLReply {
         // return self.writeRegister(registerAddress, TMCLCommand.WRITE_DRV, 1, value, module_id);
         self.writeRegister(registerAddress, TMCLCommand::WRITE_DRV, 1, value, module_id)
+            .await
     }
 
-    fn readDRV(&mut self, registerAddress: u8, module_id: Option<u16>, signed: bool) -> u32 {
+    async fn readDRV(&mut self, registerAddress: u8, module_id: Option<u16>, signed: bool) -> u32 {
         self.readRegister(registerAddress, TMCLCommand::READ_DRV, 1, module_id, signed)
+            .await
     }
 
-    fn readRegister(
+    async fn readRegister(
         &mut self,
         registerAddress: u8,
         command: TMCLCommand,
@@ -363,6 +397,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
     ) -> u32 {
         let mut value = self
             .send(command, registerAddress, channel, 0, module_id)
+            .await
             .value;
 
         if signed {
@@ -372,7 +407,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         value
     }
     //
-    fn writeRegister(
+    async fn writeRegister(
         &mut self,
         registerAddress: u8,
         command: TMCLCommand,
@@ -381,19 +416,28 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         module_id: Option<u16>,
     ) -> TMCLReply {
         self.send(command, registerAddress, channel, value, module_id)
+            .await
     }
 
     //    # Motion control functions
-    fn rotate(&mut self, motor: u8, velocity: u32, module_id: Option<u16>) -> TMCLReply {
+    async fn rotate(&mut self, motor: u8, velocity: u32, module_id: Option<u16>) -> TMCLReply {
         self.send(TMCLCommand::ROR, 0, motor, velocity, module_id)
+            .await
     }
 
-    fn stop(&mut self, motor: u8, module_id: Option<u16>) -> TMCLReply {
-        self.send(TMCLCommand::MST, 0, motor, 0, module_id)
+    async fn stop(&mut self, motor: u8, module_id: Option<u16>) -> TMCLReply {
+        self.send(TMCLCommand::MST, 0, motor, 0, module_id).await
     }
 
-    fn mv(&mut self, moveType: u8, motor: u8, position: u32, module_id: Option<u16>) -> TMCLReply {
+    async fn mv(
+        &mut self,
+        moveType: u8,
+        motor: u8,
+        position: u32,
+        module_id: Option<u16>,
+    ) -> TMCLReply {
         self.send(TMCLCommand::MVP, moveType, motor, position, module_id)
+            .await
     }
 
     /*
@@ -401,8 +445,8 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         Returns the value of the reply. Refer to the documentation of your
         specific module for details on what is returned.
     */
-    fn moveTo(&mut self, motor: u8, position: u32, module_id: Option<u16>) -> u32 {
-        self.mv(0, motor, position, module_id).value
+    async fn moveTo(&mut self, motor: u8, position: u32, module_id: Option<u16>) -> u32 {
+        self.mv(0, motor, position, module_id).await.value
     }
     //
     /*
@@ -410,39 +454,40 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         Returns the value of the reply. Refer to the documentation of your
         specific module for details on what is returned.
     */
-    fn moveBy(&mut self, motor: u8, distance: u32, module_id: Option<u16>) -> u32 {
-        self.mv(1, motor, distance, module_id).value
+    async fn moveBy(&mut self, motor: u8, distance: u32, module_id: Option<u16>) -> u32 {
+        self.mv(1, motor, distance, module_id).await.value
     }
     //
     //    # IO pin functions
-    fn analogInput(&mut self, x: u8, module_id: Option<u16>) -> u32 {
-        self.send(TMCLCommand::GIO, x, 1, 0, module_id).value
+    async fn analogInput(&mut self, x: u8, module_id: Option<u16>) -> u32 {
+        self.send(TMCLCommand::GIO, x, 1, 0, module_id).await.value
     }
     //
-    fn digitalInput(&mut self, x: u8, module_id: Option<u16>) -> u32 {
-        self.send(TMCLCommand::GIO, x, 0, 0, module_id).value
+    async fn digitalInput(&mut self, x: u8, module_id: Option<u16>) -> u32 {
+        self.send(TMCLCommand::GIO, x, 0, 0, module_id).await.value
     }
     //
-    fn digitalOutput(&mut self, x: u8, module_id: Option<u16>) -> u32 {
-        self.send(TMCLCommand::GIO, x, 2, 0, module_id).value
+    async fn digitalOutput(&mut self, x: u8, module_id: Option<u16>) -> u32 {
+        self.send(TMCLCommand::GIO, x, 2, 0, module_id).await.value
     }
     //
-    fn setDigitalOutput(&mut self, x: u8, module_id: Option<u16>) -> u32 {
-        self.send(TMCLCommand::SIO, x, 2, 1, module_id).value
+    async fn setDigitalOutput(&mut self, x: u8, module_id: Option<u16>) -> u32 {
+        self.send(TMCLCommand::SIO, x, 2, 1, module_id).await.value
     }
     //
-    fn clearDigitalOutput(&mut self, x: u8, module_id: Option<u16>) -> u32 {
-        self.send(TMCLCommand::SIO, x, 2, 0, module_id).value
+    async fn clearDigitalOutput(&mut self, x: u8, module_id: Option<u16>) -> u32 {
+        self.send(TMCLCommand::SIO, x, 2, 0, module_id).await.value
     }
     //
     //    " testing new interface usage (ED) => "
     //    # axis parameter access functions
-    fn axisParameterRaw(&mut self, module_id: Option<u16>, axis: u8, commandType: u8) -> u32 {
+    async fn axisParameterRaw(&mut self, module_id: Option<u16>, axis: u8, commandType: u8) -> u32 {
         self.send(TMCLCommand::GAP, commandType, axis, 0, module_id)
+            .await
             .value
     }
     //
-    fn setAxisParameterRaw(
+    async fn setAxisParameterRaw(
         &mut self,
         module_id: Option<u16>,
         axis: u8,
@@ -450,15 +495,22 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         value: u32,
     ) -> TMCLReply {
         self.send(TMCLCommand::SAP, commandType, axis, value, module_id)
+            .await
     }
     //
     //    # global parameter access functions
-    fn globalParameterRaw(&mut self, module_id: Option<u16>, bank: u8, commandType: u8) -> u32 {
+    async fn globalParameterRaw(
+        &mut self,
+        module_id: Option<u16>,
+        bank: u8,
+        commandType: u8,
+    ) -> u32 {
         self.send(TMCLCommand::GGP, commandType, bank, 0, module_id)
+            .await
             .value
     }
     //
-    fn setGlobalParameterRaw(
+    async fn setGlobalParameterRaw(
         &mut self,
         module_id: Option<u16>,
         bank: u8,
@@ -466,27 +518,28 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         value: u32,
     ) -> TMCLReply {
         self.send(TMCLCommand::SGP, commandType, bank, value, module_id)
+            .await
     }
     //
     //    # IO pin functions
-    fn analogInputRaw(&mut self, module_id: Option<u16>, x: u8) -> u32 {
-        self.send(TMCLCommand::GIO, x, 1, 0, module_id).value
+    async fn analogInputRaw(&mut self, module_id: Option<u16>, x: u8) -> u32 {
+        self.send(TMCLCommand::GIO, x, 1, 0, module_id).await.value
     }
     //
-    fn digitalInputRaw(&mut self, module_id: Option<u16>, x: u8) -> u32 {
-        self.send(TMCLCommand::GIO, x, 0, 0, module_id).value
+    async fn digitalInputRaw(&mut self, module_id: Option<u16>, x: u8) -> u32 {
+        self.send(TMCLCommand::GIO, x, 0, 0, module_id).await.value
     }
     //
-    fn digitalOutputRaw(&mut self, module_id: Option<u16>, x: u8) -> u32 {
-        self.send(TMCLCommand::GIO, x, 2, 0, module_id).value
+    async fn digitalOutputRaw(&mut self, module_id: Option<u16>, x: u8) -> u32 {
+        self.send(TMCLCommand::GIO, x, 2, 0, module_id).await.value
     }
     //
-    fn setDigitalOutputRaw(&mut self, module_id: Option<u16>, x: u8) -> u32 {
-        self.send(TMCLCommand::SIO, x, 2, 1, module_id).value
+    async fn setDigitalOutputRaw(&mut self, module_id: Option<u16>, x: u8) -> u32 {
+        self.send(TMCLCommand::SIO, x, 2, 1, module_id).await.value
     }
     //
-    fn clearDigitalOutputRaw(&mut self, module_id: Option<u16>, x: u8) -> u32 {
-        self.send(TMCLCommand::SIO, x, 2, 0, module_id).value
+    async fn clearDigitalOutputRaw(&mut self, module_id: Option<u16>, x: u8) -> u32 {
+        self.send(TMCLCommand::SIO, x, 2, 0, module_id).await.value
     }
     //
     //    " <= testing new interface usage (ED) "

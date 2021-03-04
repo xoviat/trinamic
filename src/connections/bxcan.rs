@@ -2,6 +2,7 @@ use bxcan;
 use bxcan::Id;
 use bxcan::{Frame, StandardId};
 use core::convert::TryInto;
+use core::future::Future;
 use nb::block;
 
 pub struct BxCanInterface<T: bxcan::Instance> {
@@ -15,10 +16,13 @@ impl<T: bxcan::Instance> BxCanInterface<T> {
 }
 
 impl<T: bxcan::Instance> crate::TMCLConnnection for BxCanInterface<T> {
+    type SendFuture<'a> = impl Future<Output = ()>;
+    type ReceiveFuture<'a> = impl Future<Output = [u8; 8]>;
+
     // Send the bytearray [data] representing a TMCL command. The length of
     // [data] is 9. The hostID and module_id parameters may be used for extended
     // addressing options available on the implemented communication interface.
-    fn _send(&mut self, host_id: u16, module_id: u16, data: [u8; 8]) {
+    fn _send<'a>(&mut self, host_id: u16, module_id: u16, data: [u8; 8]) -> Self::SendFuture<'a> {
         let frame_tx = Frame::new_data(
             StandardId::new(module_id).unwrap(),
             [
@@ -27,13 +31,15 @@ impl<T: bxcan::Instance> crate::TMCLConnnection for BxCanInterface<T> {
         );
 
         block!(self.can.transmit(&frame_tx)).unwrap();
+
+        async move {}
     }
     //
     // Receive a TMCL reply and return it as a bytearray. The length of the
     // returned byte array is 9. The hostID and module_id parameters may be used
     // for extended addressing options available on the implemented
     // communication interface.
-    fn _recv(&mut self, host_id: u16, module_id: u16) -> [u8; 8] {
+    fn _recv<'a>(&mut self, host_id: u16, module_id: u16) -> Self::ReceiveFuture<'a> {
         let frame_rx = block!(self.can.receive()).unwrap();
 
         let id = match frame_rx.id() {
@@ -46,8 +52,10 @@ impl<T: bxcan::Instance> crate::TMCLConnnection for BxCanInterface<T> {
             Err(_) => [0; 7],
         };
 
-        [
-            id, data[0], data[1], data[2], data[3], data[4], data[5], data[6],
-        ]
+        async move {
+            [
+                id, data[0], data[1], data[2], data[3], data[4], data[5], data[6],
+            ]
+        }
     }
 }
