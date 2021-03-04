@@ -1,4 +1,4 @@
-use crate::{TMCLConnnection, TMCLInterface, TMCLReply, TMCLRequest};
+use crate::{TMCLConnnection, TMCLInterface, TMCLReply};
 
 pub struct TMCM_1276<T: TMCLConnnection> {
     connection: TMCLInterface<T>,
@@ -6,7 +6,7 @@ pub struct TMCM_1276<T: TMCLConnnection> {
     __default_motor: u8,
 }
 
-impl<T: bxcan::Instance> TMCM_1276<T> {
+impl<T: TMCLConnnection> TMCM_1276<T> {
     pub fn new(connection: TMCLInterface<T>) -> Self {
         TMCM_1276 {
             connection: connection,
