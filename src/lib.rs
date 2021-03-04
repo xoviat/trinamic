@@ -1,9 +1,14 @@
+#![no_std]
+
 use bxcan;
 use bxcan::Id;
 use bxcan::{Frame, StandardId};
 use core::convert::TryInto;
 use core::mem::transmute;
 use nb::block;
+
+mod connections;
+mod modules;
 
 struct TMCHelpers {}
 

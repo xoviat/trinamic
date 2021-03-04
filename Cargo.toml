@@ -12,10 +12,8 @@ repository = "https://github.com/xoviat/trinamic.git"
 keywords = ["Trinamic", "TMCL", "can", "RS232", "RS485"]
 categories = ["embedded", "no-std", "hardware-support"]
 
-[features]
-std = ["interior_mut/std"]
-
 [dependencies]
-embedded-hal = "*"
-embassy-traits = "*"
-
+embedded-hal = { version = "0.2.3", features = ["unproven"] }
+embassy-traits = "0.0.0"
+bxcan = "0.4.0"
+nb = "*"
