@@ -1,14 +1,7 @@
 #![no_std]
 
-use bxcan;
-use bxcan::Id;
-use bxcan::{Frame, StandardId};
 use core::convert::TryInto;
 use core::mem::transmute;
-use nb::block;
-
-mod connections;
-mod modules;
 
 struct TMCHelpers {}
 
@@ -56,14 +49,19 @@ impl TMCL {
     //        return checksum
 }
 
-pub struct TMCLInterface<T: bxcan::Instance> {
-    can: bxcan::Can<T>,
-    _MODULE_ID: u16,
-    _HOST_ID: u16,
+pub trait TMCLConnnection {
+    fn _send(&mut self, host_id: u16, module_id: u16, data: [u8; 8]);
+    fn _recv(&mut self, host_id: u16, module_id: u16) -> [u8; 8];
 }
 
-impl<T: bxcan::Instance> TMCLInterface<T> {
-    pub fn new(can: bxcan::Can<T>, host_id: Option<u16>, module_id: Option<u16>) -> Self {
+pub struct TMCLInterface<T: TMCLConnnection> {
+    _MODULE_ID: u16,
+    _HOST_ID: u16,
+    connection: T,
+}
+
+impl<T: TMCLConnnection> TMCLInterface<T> {
+    pub fn new(connection: T, host_id: Option<u16>, module_id: Option<u16>) -> Self {
         let host_id = match host_id {
             Some(host_id) => host_id,
             None => 2,
@@ -74,7 +72,7 @@ impl<T: bxcan::Instance> TMCLInterface<T> {
         };
 
         TMCLInterface {
-            can: can,
+            connection: connection,
             _MODULE_ID: module_id,
             _HOST_ID: host_id,
         }
@@ -130,41 +128,6 @@ impl<T: bxcan::Instance> TMCLInterface<T> {
     //        self._debug      = debug
     //
 
-    // Send the bytearray [data] representing a TMCL command. The length of
-    // [data] is 9. The hostID and module_id parameters may be used for extended
-    // addressing options available on the implemented communication interface.
-    fn _send(&mut self, host_id: u16, module_id: u16, data: [u8; 8]) {
-        let frame_tx = Frame::new_data(
-            StandardId::new(module_id).unwrap(),
-            [
-                data[1], data[2], data[3], data[4], data[5], data[6], data[7],
-            ],
-        );
-
-        block!(self.can.transmit(&frame_tx)).unwrap();
-    }
-    //
-    // Receive a TMCL reply and return it as a bytearray. The length of the
-    // returned byte array is 9. The hostID and module_id parameters may be used
-    // for extended addressing options available on the implemented
-    // communication interface.
-    fn _recv(&mut self, host_id: u16, module_id: u16) -> [u8; 8] {
-        let frame_rx = block!(self.can.receive()).unwrap();
-
-        let id = match frame_rx.id() {
-            Id::Extended(id) => id.as_raw() as u8,
-            Id::Standard(id) => id.as_raw() as u8,
-        };
-
-        let data: [u8; 7] = match (frame_rx.data().unwrap() as &[u8]).try_into() {
-            Ok(data) => data,
-            Err(_) => [0; 7],
-        };
-
-        [
-            id, data[0], data[1], data[2], data[3], data[4], data[5], data[6],
-        ]
-    }
     //    pub fn enableDebug(&mut self, enable) {
     //        """
     //        Set the debug mode, which dumps all TMCL datagrams written and read.
@@ -213,9 +176,10 @@ impl<T: bxcan::Instance> TMCLInterface<T> {
         };
         let request = TMCLRequest::new(module_id as u8, opcode, opType, motor, value, None);
 
-        self._send(self._HOST_ID, module_id, request.to_buffer());
+        self.connection
+            ._send(self._HOST_ID, module_id, request.to_buffer());
 
-        TMCLReply::from_buffer(self._recv(self._HOST_ID, module_id))
+        TMCLReply::from_buffer(self.connection._recv(self._HOST_ID, module_id))
     }
 
     // Send the command for entering bootloader mode. This TMCL command does
@@ -237,7 +201,8 @@ impl<T: bxcan::Instance> TMCLInterface<T> {
         );
 
         // # Send the request
-        self._send(self._HOST_ID, module_id, request.to_buffer())
+        self.connection
+            ._send(self._HOST_ID, module_id, request.to_buffer())
     }
     //    pub fn getVersionString(&mut self, module_id=None) {
     //        """
@@ -703,3 +668,6 @@ impl TMCLReply {
         self.status == 0
     }
 }
+
+mod connections;
+mod modules;
