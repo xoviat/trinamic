@@ -1,0 +1,21 @@
+[package]
+name = "trinamic"
+version = "0.0.0-beta0"
+authors = ["xoviat <xoviat@gmail.com>"]
+
+license = "Apache-2.0/MIT"
+
+readme = "README.md"
+description = "Trinamic Motion Control Language"
+repository = "https://github.com/xoviat/trinamic.git"
+
+keywords = ["Trinamic", "TMCL", "can", "RS232", "RS485"]
+categories = ["embedded", "no-std", "hardware-support"]
+
+[features]
+std = ["interior_mut/std"]
+
+[dependencies]
+embedded-hal = "*"
+embassy-traits = "*"
+
