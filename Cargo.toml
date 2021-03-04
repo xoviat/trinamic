@@ -1,16 +1,14 @@
 [package]
 name = "trinamic"
 version = "0.0.0-beta0"
-authors = ["xoviat <xoviat@gmail.com>"]
-
-license = "Apache-2.0/MIT"
-
+edition = "2018"
+keywords = ["no-std", "embedded-hal-driver", "embedded-hal"]
+categories = ["embedded", "hardware-support", "no-std"]
+description = "A crate to use HD44780 compliant displays with embedded-hal"
+authors = ["John Doneth <doneth7@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/xoviat/trinamic"
 readme = "README.md"
-description = "Trinamic Motion Control Language"
-repository = "https://github.com/xoviat/trinamic.git"
-
-keywords = ["Trinamic", "TMCL", "can", "RS232", "RS485"]
-categories = ["embedded", "no-std", "hardware-support"]
 
 [dependencies]
 embedded-hal = { version = "0.2.3", features = ["unproven"] }

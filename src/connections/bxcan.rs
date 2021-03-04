@@ -1,14 +1,15 @@
 use bxcan;
 use bxcan::Id;
 use bxcan::{Frame, StandardId};
+use core::convert::TryInto;
 use nb::block;
 
 pub struct BxCanInterface<T: bxcan::Instance> {
     can: bxcan::Can<T>,
 }
 
-impl<T: bxcan::instance> BxCanInterface<T> {
-    pub fn new(can: T) -> Self {
+impl<T: bxcan::Instance> BxCanInterface<T> {
+    pub fn new(can: bxcan::Can<T>) -> Self {
         Self { can: can }
     }
 }
