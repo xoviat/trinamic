@@ -1,3 +1,7 @@
-mod tmcm_1276;
+/*
+    mods are public to access parameter enums
+*/
 
-pub use self::tmcm_1276::TMCM_1276;
+pub mod tmcm_1276;
+
+pub use tmcm_1276::TMCM_1276;
