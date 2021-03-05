@@ -224,7 +224,7 @@ dependencies = [
  "bxcan",
  "embassy-traits",
  "embedded-hal",
- "nb 0.1.3",
+ "nb 1.0.0",
 ]
 
 [[package]]
