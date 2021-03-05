@@ -35,7 +35,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
             .await
     }
     //
-    pub async fn setAxisParameter(&mut self, apType: _AP, value: u32) -> TMCLReply {
+    pub async fn setAxisParameter(&mut self, apType: _AP, value: i32) -> TMCLReply {
         self.connection
             .setAxisParameter(apType as u8, self.__default_motor, value, None)
             .await
@@ -48,14 +48,14 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
             .await
     }
 
-    pub async fn setGlobalParameter(&mut self, gpType: u8, bank: u8, value: u32) {
+    pub async fn setGlobalParameter(&mut self, gpType: u8, bank: u8, value: i32) {
         self.connection
             .setGlobalParameter(gpType, bank, value, None)
             .await
     }
     //
     //    # Motion Control functions
-    pub async fn rotate(&mut self, velocity: u32) -> TMCLReply {
+    pub async fn rotate(&mut self, velocity: i32) -> TMCLReply {
         self.setTargetVelocity(velocity).await
     }
     //
@@ -63,7 +63,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.rotate(0).await
     }
     //
-    pub async fn moveTo(&mut self, position: u32, velocity: Option<u32>) {
+    pub async fn moveTo(&mut self, position: i32, velocity: Option<i32>) {
         if velocity.is_some() {
             self.setMaxVelocity(velocity.unwrap()).await;
         }
@@ -74,19 +74,19 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.setTargetPosition(position).await;
     }
     //
-    pub async fn moveBy(&mut self, difference: i32, velocity: Option<u32>) -> u32 {
+    pub async fn moveBy(&mut self, difference: i32, velocity: Option<i32>) -> u32 {
         let position = difference + self.getActualPosition().await as i32;
-        self.moveTo(position as u32, velocity).await;
+        self.moveTo(position, velocity).await;
 
         position as u32
     }
     //
     //    # Current control functions
-    pub async fn setMotorRunCurrent(&mut self, current: u32) -> TMCLReply {
+    pub async fn setMotorRunCurrent(&mut self, current: i32) -> TMCLReply {
         self.setMaxCurrent(current).await
     }
     //
-    pub async fn setMotorStandbyCurrent(&mut self, current: u32) -> TMCLReply {
+    pub async fn setMotorStandbyCurrent(&mut self, current: i32) -> TMCLReply {
         self.setAxisParameter(_AP::StandbyCurrent, current).await
     }
     //
@@ -94,7 +94,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.getAxisParameter(_AP::MaxCurrent).await
     }
     //
-    pub async fn setMaxCurrent(&mut self, current: u32) -> TMCLReply {
+    pub async fn setMaxCurrent(&mut self, current: i32) -> TMCLReply {
         self.setAxisParameter(_AP::MaxCurrent, current).await
     }
     //
@@ -114,7 +114,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.getAxisParameter(_AP::TargetPosition).await
     }
     //
-    pub async fn setTargetPosition(&mut self, position: u32) -> TMCLReply {
+    pub async fn setTargetPosition(&mut self, position: i32) -> TMCLReply {
         self.setAxisParameter(_AP::TargetPosition, position).await
     }
     //
@@ -122,7 +122,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.getAxisParameter(_AP::ActualPosition).await
     }
     //
-    pub async fn setActualPosition(&mut self, position: u32) -> TMCLReply {
+    pub async fn setActualPosition(&mut self, position: i32) -> TMCLReply {
         self.setAxisParameter(_AP::ActualPosition, position).await
     }
     //
@@ -130,7 +130,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.getAxisParameter(_AP::TargetVelocity).await
     }
     //
-    pub async fn setTargetVelocity(&mut self, velocity: u32) -> TMCLReply {
+    pub async fn setTargetVelocity(&mut self, velocity: i32) -> TMCLReply {
         self.setAxisParameter(_AP::TargetVelocity, velocity).await
     }
     //
@@ -142,7 +142,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.getAxisParameter(_AP::MaxVelocity).await
     }
     //
-    pub async fn setMaxVelocity(&mut self, velocity: u32) -> TMCLReply {
+    pub async fn setMaxVelocity(&mut self, velocity: i32) -> TMCLReply {
         self.setAxisParameter(_AP::MaxVelocity, velocity).await
     }
     //
@@ -150,7 +150,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.getAxisParameter(_AP::MaxAcceleration).await
     }
     //
-    pub async fn setMaxAcceleration(&mut self, acceleration: u32) -> TMCLReply {
+    pub async fn setMaxAcceleration(&mut self, acceleration: i32) -> TMCLReply {
         self.setAxisParameter(_AP::MaxAcceleration, acceleration)
             .await
     }

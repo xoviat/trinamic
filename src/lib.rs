@@ -173,7 +173,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         opcode: TMCLCommand,
         opType: u8,
         motor: u8,
-        value: u32,
+        value: i32,
         module_id: Option<u16>,
     ) -> TMCLReply {
         // If no module ID is given, use the default one
@@ -184,34 +184,35 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         let request = TMCLRequest::new(module_id as u8, opcode, opType, motor, value, None);
 
         self.connection
-            ._send(self._HOST_ID, module_id, request.to_buffer()).await;
+            ._send(self._HOST_ID, module_id, request.to_buffer())
+            .await;
 
         TMCLReply::from_buffer(self.connection._recv(self._HOST_ID, module_id).await)
     }
 
     // Send the command for entering bootloader mode. This TMCL command does
     // sresult in a reply.
-    async fn sendBoot(&mut self, module_id: Option<u16>) {
-        // # If no module ID is given, use the default one
-        let module_id = match module_id {
-            None => self._MODULE_ID,
-            Some(module_id) => module_id,
-        };
-
-        let request = TMCLRequest::new(
-            module_id as u8,
-            TMCLCommand::BOOT,
-            0x81,
-            0x92,
-            0xA3B4C5D6,
-            None,
-        );
-
-        // # Send the request
-        self.connection
-            ._send(self._HOST_ID, module_id, request.to_buffer())
-            .await
-    }
+    //    async fn sendBoot(&mut self, module_id: Option<u16>) {
+    //        // # If no module ID is given, use the default one
+    //        let module_id = match module_id {
+    //            None => self._MODULE_ID,
+    //            Some(module_id) => module_id,
+    //        };
+    //
+    //        let request = TMCLRequest::new(
+    //            module_id as u8,
+    //            TMCLCommand::BOOT,
+    //            0x81,
+    //            0x92,
+    //            0xA3B4C5D6,
+    //            None,
+    //        );
+    //
+    //        // # Send the request
+    //        self.connection
+    //            ._send(self._HOST_ID, module_id, request.to_buffer())
+    //            .await
+    //    }
     //    pub fn getVersionString(&mut self, module_id=None) {
     //        """
     //        Request the ASCII version string.
@@ -228,7 +229,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         pCommand: TMCLCommand,
         pType: u8,
         pAxis: u8,
-        pValue: u32,
+        pValue: i32,
         module_id: Option<u16>,
         signed: bool,
     ) -> u32 {
@@ -248,7 +249,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         pCommand: TMCLCommand,
         pType: u8,
         pAxis: u8,
-        pValue: u32,
+        pValue: i32,
         module_id: Option<u16>,
     ) -> TMCLReply {
         self.send(pCommand, pType, pAxis, pValue, module_id).await
@@ -278,7 +279,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         &mut self,
         commandType: u8,
         axis: u8,
-        value: u32,
+        value: i32,
         module_id: Option<u16>,
     ) -> TMCLReply {
         self.send(TMCLCommand::SAP, commandType, axis, value, module_id)
@@ -299,7 +300,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         &mut self,
         commandType: u8,
         axis: u8,
-        value: u32,
+        value: i32,
         module_id: Option<u16>,
     ) {
         self.send(TMCLCommand::SAP, commandType, axis, value, module_id)
@@ -331,7 +332,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         &mut self,
         commandType: u8,
         bank: u8,
-        value: u32,
+        value: i32,
         module_id: Option<u16>,
     ) {
         self.send(TMCLCommand::SGP, commandType, bank, value, module_id)
@@ -347,7 +348,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         &mut self,
         commandType: u8,
         bank: u8,
-        value: u32,
+        value: i32,
         module_id: Option<u16>,
     ) {
         self.send(TMCLCommand::SGP, commandType, bank, value, module_id)
@@ -360,7 +361,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
     async fn writeMC(
         &mut self,
         registerAddress: u8,
-        value: u32,
+        value: i32,
         module_id: Option<u16>,
     ) -> TMCLReply {
         self.writeRegister(registerAddress, TMCLCommand::WRITE_MC, 0, value, module_id)
@@ -375,7 +376,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
     async fn writeDRV(
         &mut self,
         registerAddress: u8,
-        value: u32,
+        value: i32,
         module_id: Option<u16>,
     ) -> TMCLReply {
         // return self.writeRegister(registerAddress, TMCLCommand.WRITE_DRV, 1, value, module_id);
@@ -413,7 +414,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         registerAddress: u8,
         command: TMCLCommand,
         channel: u8,
-        value: u32,
+        value: i32,
         module_id: Option<u16>,
     ) -> TMCLReply {
         self.send(command, registerAddress, channel, value, module_id)
@@ -421,7 +422,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
     }
 
     //    # Motion control functions
-    async fn rotate(&mut self, motor: u8, velocity: u32, module_id: Option<u16>) -> TMCLReply {
+    async fn rotate(&mut self, motor: u8, velocity: i32, module_id: Option<u16>) -> TMCLReply {
         self.send(TMCLCommand::ROR, 0, motor, velocity, module_id)
             .await
     }
@@ -434,7 +435,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         &mut self,
         moveType: u8,
         motor: u8,
-        position: u32,
+        position: i32,
         module_id: Option<u16>,
     ) -> TMCLReply {
         self.send(TMCLCommand::MVP, moveType, motor, position, module_id)
@@ -446,7 +447,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         Returns the value of the reply. Refer to the documentation of your
         specific module for details on what is returned.
     */
-    async fn moveTo(&mut self, motor: u8, position: u32, module_id: Option<u16>) -> u32 {
+    async fn moveTo(&mut self, motor: u8, position: i32, module_id: Option<u16>) -> u32 {
         self.mv(0, motor, position, module_id).await.value
     }
     //
@@ -455,7 +456,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         Returns the value of the reply. Refer to the documentation of your
         specific module for details on what is returned.
     */
-    async fn moveBy(&mut self, motor: u8, distance: u32, module_id: Option<u16>) -> u32 {
+    async fn moveBy(&mut self, motor: u8, distance: i32, module_id: Option<u16>) -> u32 {
         self.mv(1, motor, distance, module_id).await.value
     }
     //
@@ -493,7 +494,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         module_id: Option<u16>,
         axis: u8,
         commandType: u8,
-        value: u32,
+        value: i32,
     ) -> TMCLReply {
         self.send(TMCLCommand::SAP, commandType, axis, value, module_id)
             .await
@@ -516,7 +517,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         module_id: Option<u16>,
         bank: u8,
         commandType: u8,
-        value: u32,
+        value: i32,
     ) -> TMCLReply {
         self.send(TMCLCommand::SGP, commandType, bank, value, module_id)
             .await
@@ -618,7 +619,7 @@ pub struct TMCLRequest {
     command: u8,
     commandType: u8,
     motorBank: u8,
-    value: u32,
+    value: i32,
     checksum: u8,
 }
 
@@ -628,7 +629,7 @@ impl TMCLRequest {
         command: TMCLCommand,
         commandType: u8,
         motorBank: u8,
-        value: u32,
+        value: i32,
         checksum: Option<u8>,
     ) -> Self {
         let mut request = TMCLRequest {
@@ -636,7 +637,7 @@ impl TMCLRequest {
             command: command as u8 & 0xFF,
             commandType: commandType & 0xFF,
             motorBank: motorBank & 0xFF,
-            value: value & 0xFFFFFFFF,
+            value: value,
             checksum: 0,
         };
 
