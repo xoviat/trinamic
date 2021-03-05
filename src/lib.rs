@@ -184,7 +184,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         let request = TMCLRequest::new(module_id as u8, opcode, opType, motor, value, None);
 
         self.connection
-            ._send(self._HOST_ID, module_id, request.to_buffer());
+            ._send(self._HOST_ID, module_id, request.to_buffer()).await;
 
         TMCLReply::from_buffer(self.connection._recv(self._HOST_ID, module_id).await)
     }
