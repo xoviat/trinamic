@@ -56,8 +56,9 @@ pub trait TMCLConnnection {
     type SendFuture<'a>: Future<Output = ()>;
     type ReceiveFuture<'a>: Future<Output = [u8; 8]>;
 
-    fn _send<'a>(&mut self, host_id: u16, module_id: u16, data: [u8; 8]) -> Self::SendFuture<'a>;
-    fn _recv<'a>(&mut self, host_id: u16, module_id: u16) -> Self::ReceiveFuture<'a>;
+    fn _send<'a>(&'a mut self, host_id: u16, module_id: u16, data: [u8; 8])
+        -> Self::SendFuture<'a>;
+    fn _recv<'a>(&'a mut self, host_id: u16, module_id: u16) -> Self::ReceiveFuture<'a>;
 }
 
 pub struct TMCLInterface<T: TMCLConnnection> {
