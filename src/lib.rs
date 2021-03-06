@@ -3,7 +3,8 @@
 #![feature(type_alias_impl_trait)]
 
 use core::future::Future;
-use core::mem::transmute;
+use core::mem;
+use core::convert::TryInto;
 
 struct TMCHelpers {}
 
@@ -697,7 +698,7 @@ impl TMCLReply {
         let reply_address: u8 = data[0];
         let module_address: u8 = data[1];
         let status: u8 = data[2];
-        let command: TMCLCommand = unsafe { transmute(data[3] as i8) };
+        let command: TMCLCommand = unsafe { mem::transmute(data[3] as i8) };
         let value: u32 = ((data[4] as u32) << (8 * 3))
             + ((data[5] as u32) << (8 * 2))
             + ((data[6] as u32) << (8 * 1))
