@@ -29,7 +29,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
     //        ("The TMCM-1276 is a smart stepper motor driver module. The module is controlled via a CAN bus interface. Voltage supply: 10 - 30V");
     //
     //    # Axis parameter access
-    pub async fn getAxisParameter(&mut self, apType: _AP) -> u32 {
+    pub async fn getAxisParameter(&mut self, apType: _AP) -> i32 {
         self.connection
             .axisParameter(apType as u8, self.__default_motor, None, false)
             .await
@@ -42,7 +42,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
     }
     //
     //    # Global parameter access
-    pub async fn getGlobalParameter(&mut self, gpType: u8, bank: u8) -> u32 {
+    pub async fn getGlobalParameter(&mut self, gpType: u8, bank: u8) -> i32 {
         self.connection
             .globalParameter(gpType, bank, None, false)
             .await
@@ -90,7 +90,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.setAxisParameter(_AP::StandbyCurrent, current).await
     }
     //
-    pub async fn getMaxCurrent(&mut self) -> u32 {
+    pub async fn getMaxCurrent(&mut self) -> i32 {
         self.getAxisParameter(_AP::MaxCurrent).await
     }
     //
@@ -110,7 +110,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
     //        self.setAxisParameter(_AP::StopOnStall, velocity)
     //
     //    # Motion parameter functions
-    pub async fn getTargetPosition(&mut self) -> u32 {
+    pub async fn getTargetPosition(&mut self) -> i32 {
         self.getAxisParameter(_AP::TargetPosition).await
     }
     //
@@ -118,7 +118,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.setAxisParameter(_AP::TargetPosition, position).await
     }
     //
-    pub async fn getActualPosition(&mut self) -> u32 {
+    pub async fn getActualPosition(&mut self) -> i32 {
         self.getAxisParameter(_AP::ActualPosition).await
     }
     //
@@ -126,7 +126,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.setAxisParameter(_AP::ActualPosition, position).await
     }
     //
-    pub async fn getTargetVelocity(&mut self) -> u32 {
+    pub async fn getTargetVelocity(&mut self) -> i32 {
         self.getAxisParameter(_AP::TargetVelocity).await
     }
     //
@@ -134,11 +134,11 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.setAxisParameter(_AP::TargetVelocity, velocity).await
     }
     //
-    pub async fn getActualVelocity(&mut self) -> u32 {
+    pub async fn getActualVelocity(&mut self) -> i32 {
         self.getAxisParameter(_AP::ActualVelocity).await
     }
     //
-    pub async fn getMaxVelocity(&mut self) -> u32 {
+    pub async fn getMaxVelocity(&mut self) -> i32 {
         self.getAxisParameter(_AP::MaxVelocity).await
     }
     //
@@ -146,7 +146,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
         self.setAxisParameter(_AP::MaxVelocity, velocity).await
     }
     //
-    pub async fn getMaxAcceleration(&mut self) -> u32 {
+    pub async fn getMaxAcceleration(&mut self) -> i32 {
         self.getAxisParameter(_AP::MaxAcceleration).await
     }
     //

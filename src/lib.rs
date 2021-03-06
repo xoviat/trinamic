@@ -17,9 +17,9 @@ impl TMCHelpers {
         (data & (!mask)) | ((value << shift) & mask)
     }
 
-    pub fn to_signed_32(x: u32) -> u32 {
+    pub fn to_signed_32(x: u32) -> i32 {
         let m = x & 0xffffffff;
-        (m ^ 0x80000000) - 0x80000000
+        ((m ^ 0x80000000) - 0x80000000).try_into().unwrap()
     }
 }
 
@@ -232,13 +232,13 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         pValue: i32,
         module_id: Option<u16>,
         signed: bool,
-    ) -> u32 {
+    ) -> i32 {
         let mut value = self
             .send(pCommand, pType, pAxis, pValue, module_id)
             .await
-            .value;
+            .value as i32;
         if signed {
-            value = TMCHelpers::to_signed_32(value);
+            value = TMCHelpers::to_signed_32(value as u32);
         }
 
         value
@@ -262,14 +262,14 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         axis: u8,
         module_id: Option<u16>,
         signed: bool,
-    ) -> u32 {
+    ) -> i32 {
         let mut value = self
             .send(TMCLCommand::GAP, commandType, axis, 0, module_id)
             .await
-            .value;
+            .value as i32;
 
         if signed {
-            value = TMCHelpers::to_signed_32(value);
+            value = TMCHelpers::to_signed_32(value as u32);
         }
 
         value
@@ -316,13 +316,13 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         bank: u8,
         module_id: Option<u16>,
         signed: bool,
-    ) -> u32 {
+    ) -> i32 {
         let mut value = self
             .send(TMCLCommand::GGP, commandType, bank, 0, module_id)
             .await
-            .value;
+            .value as i32;
         if signed {
-            value = TMCHelpers::to_signed_32(value);
+            value = TMCHelpers::to_signed_32(value as u32);
         }
 
         value
@@ -368,7 +368,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
             .await
     }
 
-    async fn readMC(&mut self, registerAddress: u8, module_id: Option<u16>, signed: bool) -> u32 {
+    async fn readMC(&mut self, registerAddress: u8, module_id: Option<u16>, signed: bool) -> i32 {
         self.readRegister(registerAddress, TMCLCommand::READ_MC, 0, module_id, signed)
             .await
     }
@@ -384,7 +384,7 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
             .await
     }
 
-    async fn readDRV(&mut self, registerAddress: u8, module_id: Option<u16>, signed: bool) -> u32 {
+    async fn readDRV(&mut self, registerAddress: u8, module_id: Option<u16>, signed: bool) -> i32 {
         self.readRegister(registerAddress, TMCLCommand::READ_DRV, 1, module_id, signed)
             .await
     }
@@ -396,14 +396,14 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         channel: u8,
         module_id: Option<u16>,
         signed: bool,
-    ) -> u32 {
+    ) -> i32 {
         let mut value = self
             .send(command, registerAddress, channel, 0, module_id)
             .await
-            .value;
+            .value as i32;
 
         if signed {
-            value = TMCHelpers::to_signed_32(value);
+            value = TMCHelpers::to_signed_32(value as u32);
         }
 
         value
