@@ -75,7 +75,7 @@ impl<T: TMCLConnnection> TMCM_1276<T> {
     }
     //
     pub async fn move_by(&mut self, difference: i32, velocity: Option<i32>) -> u32 {
-        let position = difference + self.get_actual_position().await as i32;
+        let position = difference + self.get_actual_position().await;
         self.move_to(position, velocity).await;
 
         position as u32
