@@ -147,7 +147,7 @@ dependencies = [
 
 [[package]]
 name = "trinamic"
-version = "0.0.0-beta1"
+version = "0.0.0-beta2"
 dependencies = [
  "bxcan",
  "embassy-traits",
