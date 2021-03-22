@@ -1,6 +1,6 @@
 [package]
 name = "trinamic"
-version = "0.0.0-beta0"
+version = "0.0.0-beta1"
 edition = "2018"
 keywords = ["no-std", "embedded-hal-driver", "embedded-hal"]
 categories = ["embedded", "hardware-support", "no-std"]

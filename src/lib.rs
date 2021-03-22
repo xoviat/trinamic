@@ -1,10 +1,11 @@
 #![no_std]
 #![feature(generic_associated_types)]
 #![feature(type_alias_impl_trait)]
+#![feature(min_type_alias_impl_trait)]
 
+use core::convert::TryInto;
 use core::future::Future;
 use core::mem;
-use core::convert::TryInto;
 
 struct TMCHelpers {}
 
@@ -252,7 +253,8 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         p_value: i32,
         module_id: Option<u16>,
     ) -> TMCLReply {
-        self.send(p_command, p_type, p_axis, p_value, module_id).await
+        self.send(p_command, p_type, p_axis, p_value, module_id)
+            .await
     }
 
     // Axis parameter access functions
@@ -380,13 +382,30 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
         module_id: Option<u16>,
     ) -> TMCLReply {
         // return self.writeRegister(registerAddress, TMCLCommand.WRITE_DRV, 1, value, module_id);
-        self.write_register(register_address, TMCLCommand::WRITE_DRV, 1, value, module_id)
-            .await
+        self.write_register(
+            register_address,
+            TMCLCommand::WRITE_DRV,
+            1,
+            value,
+            module_id,
+        )
+        .await
     }
 
-    async fn read_drv(&mut self, register_address: u8, module_id: Option<u16>, signed: bool) -> i32 {
-        self.read_register(register_address, TMCLCommand::READ_DRV, 1, module_id, signed)
-            .await
+    async fn read_drv(
+        &mut self,
+        register_address: u8,
+        module_id: Option<u16>,
+        signed: bool,
+    ) -> i32 {
+        self.read_register(
+            register_address,
+            TMCLCommand::READ_DRV,
+            1,
+            module_id,
+            signed,
+        )
+        .await
     }
 
     async fn read_register(
@@ -483,7 +502,12 @@ impl<T: TMCLConnnection> TMCLInterface<T> {
     //
     //    " testing new interface usage (ED) => "
     //    # axis parameter access functions
-    async fn axis_parameter_raw(&mut self, module_id: Option<u16>, axis: u8, command_type: u8) -> u32 {
+    async fn axis_parameter_raw(
+        &mut self,
+        module_id: Option<u16>,
+        axis: u8,
+        command_type: u8,
+    ) -> u32 {
         self.send(TMCLCommand::GAP, command_type, axis, 0, module_id)
             .await
             .value
